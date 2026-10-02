@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Quest - Vừa Học Vừa Chơi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .btn-bounce {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-bounce:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.4);
+        }
+        .btn-bounce:active {
+            transform: translateY(1px) scale(0.98);
+        }
+        .animate-pulse-fast {
+            animation: pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen overflow-x-hidden relative">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <header class="w-full p-4 border-b border-slate-700/50 glass-card sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showScreen('screen-welcome')">
+                <div class="bg-gradient-to-tr from-amber-400 to-orange-500 p-2.5 rounded-2xl shadow-lg">
+                    <i class="fa-solid fa-gamepad text-2xl text-slate-900"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-wider bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 bg-clip-text text-transparent">
+                        QUIZ QUEST
+                    </h1>
+                    <p class="text-xs text-slate-400 font-bold tracking-widest uppercase">Vừa Học Vừa Chơi</p>
+                </div>
+            </div>
+
+            <!-- Global User Stats Info -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span id="user-total-score" class="font-bold text-sm text-amber-300">0</span>
+                    <span class="text-xs text-slate-400">điểm</span>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700">
+                    <i class="fa-solid fa-medal text-cyan-400"></i>
+                    <span id="user-level" class="font-bold text-sm text-cyan-300">Lv.1</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 my-auto">
+        <div class="w-full max-w-4xl">
+
+            <!-- 1. WELCOME SCREEN -->
+            <div id="screen-welcome" class="glass-card rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="inline-block p-4 bg-slate-800/80 rounded-3xl border border-slate-700 mb-6 shadow-inner">
+                    <i class="fa-solid fa-brain text-5xl text-amber-400 animate-bounce"></i>
+                </div>
+
+                <h2 class="text-3xl sm:text-5xl font-black mb-4 tracking-tight">Thử Thách Trí Tuệ & Khai Mở Kiến Thức</h2>
+                <p class="text-slate-300 text-base sm:text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
+                    Chọn chủ đề bạn yêu thích, chinh phục các câu hỏi, tích lũy điểm kinh nghiệm và vinh danh tên mình trên bảng xếp hạng!
+                </p>
+
+                <!-- Category Selection Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <button onclick="selectCategory('math')" class="btn-bounce glass-card p-5 rounded-2xl flex flex-col items-center gap-3 border-emerald-500/30 hover:border-emerald-400 group">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <span class="font-bold text-slate-200">Toán Học</span>
+                    </button>
+
+                    <button onclick="selectCategory('it')" class="btn-bounce glass-card p-5 rounded-2xl flex flex-col items-center gap-3 border-cyan-500/30 hover:border-cyan-400 group">
+                        <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-laptop-code"></i>
+                        </div>
+                        <span class="font-bold text-slate-200">Tin Học</span>
+                    </button>
+
+                    <button onclick="selectCategory('english')" class="btn-bounce glass-card p-5 rounded-2xl flex flex-col items-center gap-3 border-indigo-500/30 hover:border-indigo-400 group">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-language"></i>
+                        </div>
+                        <span class="font-bold text-slate-200">Tiếng Anh</span>
+                    </button>
+
+                    <button onclick="selectCategory('science')" class="btn-bounce glass-card p-5 rounded-2xl flex flex-col items-center gap-3 border-rose-500/30 hover:border-rose-400 group">
+                        <div class="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-flask"></i>
+                        </div>
+                        <span class="font-bold text-slate-200">Khoa Học</span>
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button onclick="selectCategory('custom')" class="btn-bounce px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 font-bold rounded-2xl shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-folder-plus"></i> Bộ Câu Hỏi Tự Tạo
+                    </button>
+                    <button onclick="showScreen('screen-custom-editor')" class="btn-bounce px-6 py-3.5 bg-slate-800 hover:bg-slate-700 font-bold rounded-2xl border border-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-gear"></i> Quản Lý Câu Hỏi
+                    </button>
+                    <button onclick="showScreen('screen-leaderboard')" class="btn-bounce px-6 py-3.5 bg-slate-800 hover:bg-slate-700 font-bold rounded-2xl border border-slate-700 flex items-center gap-2 text-amber-400">
+                        <i class="fa-solid fa-award"></i> Bảng Xếp Hạng
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. GAME PLAY SCREEN -->
+            <div id="screen-game" class="glass-card rounded-3xl p-6 sm:p-8 hidden">
+                <!-- Game Top Info Bar -->
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6 pb-4 border-b border-slate-700/60">
+                    <div class="flex items-center gap-3">
+                        <span id="game-category-badge" class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full font-extrabold text-xs tracking-wider uppercase">
+                            Toán Học
+                        </span>
+                        <span class="text-slate-400 font-bold text-sm">
+                            Câu hỏi <span id="current-question-num" class="text-white">1</span>/<span id="total-questions-num">10</span>
+                        </span>
+                    </div>
+
+                    <!-- Streak & Timer -->
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1.5 bg-orange-500/20 border border-orange-500/30 px-3 py-1 rounded-full">
+                            <i class="fa-solid fa-fire text-orange-400"></i>
+                            <span id="streak-count" class="font-black text-orange-300 text-sm">0</span>
+                            <span class="text-xs text-orange-400/80 font-bold">Streak</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                            <i class="fa-regular fa-clock text-cyan-400"></i>
+                            <span id="timer-text" class="font-mono font-bold text-cyan-300 text-base">15</span>s
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mb-8">
+                    <div id="progress-bar" class="bg-gradient-to-r from-amber-400 to-orange-500 h-full w-0 transition-all duration-300 rounded-full"></div>
+                </div>
+
+                <!-- Lifelines / Trợ giúp -->
+                <div class="flex justify-end gap-3 mb-4">
+                    <button id="btn-lifeline-5050" onclick="useLifeline5050()" class="btn-bounce bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-scissors text-purple-400"></i> Trợ giúp 50/50
+                    </button>
+                    <button id="btn-lifeline-time" onclick="useLifelineTime()" class="btn-bounce bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-hourglass-plus text-emerald-400"></i> +10 giây
+                    </button>
+                </div>
+
+                <!-- Question Text -->
+                <div class="min-h-[100px] flex items-center justify-center mb-8 bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80">
+                    <h3 id="question-text" class="text-xl sm:text-2xl font-bold text-center leading-relaxed">
+                        Đang tải câu hỏi...
+                    </h3>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Dynamic Options Inserted via JS -->
+                </div>
+            </div>
+
+            <!-- 3. RESULT SCREEN -->
+            <div id="screen-result" class="glass-card rounded-3xl p-6 sm:p-10 text-center hidden">
+                <div class="inline-block p-4 bg-slate-800/80 rounded-full border border-slate-700 mb-4 shadow-xl">
+                    <i id="result-icon" class="fa-solid fa-crown text-5xl text-amber-400"></i>
+                </div>
+
+                <h2 id="result-title" class="text-3xl sm:text-4xl font-black mb-2">Xuất Sắc!</h2>
+                <p id="result-subtitle" class="text-slate-400 mb-6">Bạn đã hoàn thành lượt chơi xuất sắc.</p>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Tổng Điểm</p>
+                        <p id="result-score" class="text-2xl font-black text-amber-400">0</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Đúng/Tổng</p>
+                        <p id="result-accuracy" class="text-2xl font-black text-emerald-400">0/10</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Streak Cao Nhất</p>
+                        <p id="result-max-streak" class="text-2xl font-black text-orange-400">0</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">XP Nhận Được</p>
+                        <p id="result-xp" class="text-2xl font-black text-cyan-400">+0 XP</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button onclick="restartGame()" class="btn-bounce px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 font-black rounded-2xl shadow-lg flex items-center gap-2 text-slate-900">
+                        <i class="fa-solid fa-rotate-right"></i> Chơi Lại
+                    </button>
+                    <button onclick="showScreen('screen-welcome')" class="btn-bounce px-6 py-3.5 bg-slate-800 hover:bg-slate-700 font-bold rounded-2xl border border-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-house"></i> Trang Chủ
+                    </button>
+                    <button onclick="showScreen('screen-leaderboard')" class="btn-bounce px-6 py-3.5 bg-slate-800 hover:bg-slate-700 font-bold rounded-2xl border border-slate-700 flex items-center gap-2 text-amber-400">
+                        <i class="fa-solid fa-trophy"></i> Bảng Xếp Hạng
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. LEADERBOARD SCREEN -->
+            <div id="screen-leaderboard" class="glass-card rounded-3xl p-6 sm:p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black flex items-center gap-3">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> Bảng Xếp Hạng Kỷ Lục
+                    </h2>
+                    <button onclick="showScreen('screen-welcome')" class="btn-bounce px-4 py-2 bg-slate-800 rounded-xl text-sm font-bold border border-slate-700">
+                        <i class="fa-solid fa-xmark"></i> Đóng
+                    </button>
+                </div>
+
+                <div id="leaderboard-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+
+            <!-- 5. CUSTOM QUESTION EDITOR -->
+            <div id="screen-custom-editor" class="glass-card rounded-3xl p-6 sm:p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black flex items-center gap-3">
+                        <i class="fa-solid fa-pen-to-square text-indigo-400"></i> Tự Tạo Bộ Câu Hỏi
+                    </h2>
+                    <button onclick="showScreen('screen-welcome')" class="btn-bounce px-4 py-2 bg-slate-800 rounded-xl text-sm font-bold border border-slate-700">
+                        <i class="fa-solid fa-xmark"></i> Đóng
+                    </button>
+                </div>
+
+                <!-- Form Thêm Câu Hỏi -->
+                <form id="add-question-form" onsubmit="handleAddQuestion(event)" class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/70 mb-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Nội dung câu hỏi</label>
+                        <input type="text" id="input-q-text" required placeholder="Nhập câu hỏi của bạn..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Đáp án A</label>
+                            <input type="text" id="input-q-a" required placeholder="Đáp án A" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Đáp án B</label>
+                            <input type="text" id="input-q-b" required placeholder="Đáp án B" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Đáp án C</label>
+                            <input type="text" id="input-q-c" required placeholder="Đáp án C" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Đáp án D</label>
+                            <input type="text" id="input-q-d" required placeholder="Đáp án D" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Đáp án Đúng</label>
+                        <select id="input-q-correct" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm focus:outline-none">
+                            <option value="0">Đáp án A</option>
+                            <option value="1">Đáp án B</option>
+                            <option value="2">Đáp án C</option>
+                            <option value="3">Đáp án D</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Thêm Vào Danh Sách
+                    </button>
+                </form>
+
+                <!-- List Current Custom Questions -->
+                <h3 class="font-bold text-lg mb-3">Danh sách câu hỏi đã lưu (<span id="custom-count">0</span>)</h3>
+                <div id="custom-questions-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800">
+        <p>© 2026 Quiz Quest - Tối ưu hóa để chạy trực tiếp trên GitHub Pages</p>
+    </footer>
+
+    <script>
+        // --- Web Audio Synthesizer (Không dùng file MP3 ngoại vi) ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch (e) {
+                console.log("Audio not supported or blocked", e);
+            }
+        }
+
+        // --- Question Banks ---
+        const DEFAULT_QUESTIONS = {
+            math: [
+                { q: "Kết quả của phép tính 12 x 11 là bao nhiêu?", options: ["121", "132", "143", "122"], correct: 1 },
+                { q: "Căn bậc hai của 144 bằng bao nhiêu?", options: ["10", "11", "12", "14"], correct: 2 },
+                { q: "Số nguyên tố nhỏ nhất là số mấy?", options: ["0", "1", "2", "3"], correct: 2 },
+                { q: "Tổng các góc trong một tam giác bằng bao nhiêu độ?", options: ["90°", "180°", "270°", "360°"], correct: 1 },
+                { q: "Số tiếp theo trong dãy số: 2, 4, 8, 16, ... là?", options: ["24", "30", "32", "64"], correct: 2 }
+            ],
+            it: [
+                { q: "HTML là viết tắt của cụm từ nào?", options: ["Hyper Text Markup Language", "High Tech Modern Language", "Hyperlink Text Mode Language", "Home Tool Markup Language"], correct: 0 },
+                { q: "Đâu là ngôn ngữ lập trình phổ biến nhất cho phát triển Web Front-End?", options: ["Python", "C++", "JavaScript", "Java"], correct: 2 },
+                { q: "Thẻ HTML nào được sử dụng để liên kết tới một file CSS?", options: ["<script>", "<style>", "<link>", "<css>"], correct: 2 },
+                { q: "Đơn vị dữ liệu nhỏ nhất trong máy tính là gì?", options: ["Byte", "Bit", "KB", "Nibble"], correct: 1 },
+                { q: "Đâu KHÔNG PHẢI là một hệ điều hành?", options: ["Windows", "Linux", "Python", "macOS"], correct: 2 }
+            ],
+            english: [
+                { q: "Choïn từ đúng: 'She _____ to school every day.'", options: ["go", "goes", "going", "gone"], correct: 1 },
+                { q: "Từ trái nghĩa với 'Generous' (Hào phóng) là gì?", options: ["Kind", "Mean", "Friendly", "Honest"], correct: 1 },
+                { q: "Điền từ: 'I have been living here _____ 2010.'", options: ["for", "since", "in", "from"], correct: 1 },
+                { q: "Quá khứ phân từ (V3) của động từ 'Write' là gì?", options: ["Wrote", "Writing", "Written", "Writes"], correct: 2 },
+                { q: "Cụm từ 'Look forward to' có nghĩa là gì?", options: ["Trông chờ, mong đợi", "Chăm sóc", "Tìm kiếm", "Nhìn lại"], correct: 0 }
+            ],
+            science: [
+                { q: "Hành tinh nào gần Mặt Trời nhất?", options: ["Trái Đất", "Sao Hỏa", "Sao Thủy", "Sao Kim"], correct: 2 },
+                { q: "Công thức hóa học của Nước là gì?", options: ["CO2", "H2O", "O2", "NaCl"], correct: 1 },
+                { q: "Khí nào chiếm tỉ lệ cao nhất trong khí quyển Trái Đất?", options: ["Oxy", "Cacbonic", "Nitơ", "Hydro"], correct: 2 },
+                { q: "Cơ quan nào trong cơ thể người chịu trách nhiệm lọc máu?", options: ["Tim", "Gan", "Thận", "Phổi"], correct: 2 },
+                { q: "Vận tốc ánh sáng xấp xỉ bằng bao nhiêu?", options: ["300.000 km/s", "150.000 km/s", "1.000 km/s", "30.000 km/s"], correct: 0 }
+            ]
+        };
+
+        // --- STREAMING_CHUNK:App State & LocalStorage Handlers... ---
+        let currentQuestions = [];
+        let currentQIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let timer = null;
+        let timeLeft = 15;
+        let selectedCategoryKey = '';
+        let lifeline5050Used = false;
+        let lifelineTimeUsed = false;
+
+        // User Data in LocalStorage
+        let userData = JSON.parse(localStorage.getItem('qq_userData')) || {
+            totalScore: 0,
+            xp: 0,
+            level: 1,
+            history: []
+        };
+
+        let customQuestions = JSON.parse(localStorage.getItem('qq_customQuestions')) || [];
+
+        // App Initializer
+        window.addEventListener('DOMContentLoaded', () => {
+            updateUserHeaderUI();
+            renderCustomQuestionsList();
+        });
+
+        function saveUserData() {
+            localStorage.setItem('qq_userData', JSON.stringify(userData));
+            updateUserHeaderUI();
+        }
+
+        function updateUserHeaderUI() {
+            // Level calculation: 100 XP per Level
+            userData.level = Math.floor(userData.xp / 100) + 1;
+            document.getElementById('user-total-score').innerText = userData.totalScore.toLocaleString();
+            document.getElementById('user-level').innerText = `Lv.${userData.level}`;
+        }
+
+        // --- Navigation Between Screens ---
+        function showScreen(screenId) {
+            playSound('click');
+            const screens = ['screen-welcome', 'screen-game', 'screen-result', 'screen-leaderboard', 'screen-custom-editor'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (id === screenId) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+
+            if (screenId === 'screen-leaderboard') {
+                renderLeaderboard();
+            }
+        }
+
+        function selectCategory(catKey) {
+            selectedCategoryKey = catKey;
+            if (catKey === 'custom') {
+                if (customQuestions.length === 0) {
+                    alert("Bạn chưa tạo câu hỏi nào! Hãy chọn 'Quản Lý Câu Hỏi' để thêm nhé.");
+                    return;
+                }
+                currentQuestions = [...customQuestions];
+            } else {
+                currentQuestions = [...DEFAULT_QUESTIONS[catKey]];
+            }
+
+            // Shuffle questions
+            currentQuestions.sort(() => Math.random() - 0.5);
+
+            // Reset game state
+            currentQIndex = 0;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            lifeline5050Used = false;
+            lifelineTimeUsed = false;
+
+            resetLifelineButtons();
+            showScreen('screen-game');
+            loadQuestion();
+        }
+
+        function resetLifelineButtons() {
+            const btn5050 = document.getElementById('btn-lifeline-5050');
+            const btnTime = document.getElementById('btn-lifeline-time');
+            btn5050.disabled = false;
+            btn5050.classList.remove('opacity-40', 'cursor-not-allowed');
+            btnTime.disabled = false;
+            btnTime.classList.remove('opacity-40', 'cursor-not-allowed');
+        }
+
+        function loadQuestion() {
+            if (currentQIndex >= currentQuestions.length) {
+                endGame();
+                return;
+            }
+
+            const qData = currentQuestions[currentQIndex];
+            document.getElementById('current-question-num').innerText = currentQIndex + 1;
+            document.getElementById('total-questions-num').innerText = currentQuestions.length;
+            document.getElementById('streak-count').innerText = streak;
+            document.getElementById('question-text').innerText = qData.q;
+
+            // Category Badge Label
+            const catMap = { math: 'Toán Học', it: 'Tin Học', english: 'Tiếng Anh', science: 'Khoa Học', custom: 'Tự Tạo' };
+            document.getElementById('game-category-badge').innerText = catMap[selectedCategoryKey] || 'Tự Tạo';
+
+            // Update Progress Bar
+            const progressPercent = ((currentQIndex) / currentQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+            // Render Options
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            qData.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `btn-bounce glass-card p-4 rounded-2xl text-left font-bold text-slate-200 border-slate-700/80 hover:border-amber-400/50 flex items-center gap-3 transition-all option-btn-${idx}`;
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-400 font-extrabold text-sm shrink-0">
+                        ${String.fromCharCode(65 + idx)}
+                    </span>
+                    <span>${optText}</span>
+                `;
+                btn.onclick = () => checkAnswer(idx);
+                container.appendChild(btn);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timeLeft = 15;
+            document.getElementById('timer-text').innerText = timeLeft;
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-text').innerText = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    playSound('wrong');
+                    highlightCorrectAnswer();
+                    streak = 0;
+                    setTimeout(() => {
+                        currentQIndex++;
+                        loadQuestion();
+                    }, 1500);
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(selectedIndex) {
+            clearInterval(timer);
+            const qData = currentQuestions[currentQIndex];
+            const isCorrect = selectedIndex === qData.correct;
+
+            const container = document.getElementById('options-container');
+            const buttons = container.querySelectorAll('button');
+
+            buttons.forEach(btn => btn.onclick = null); // Disable all buttons
+
+            if (isCorrect) {
+                playSound('correct');
+                buttons[selectedIndex].classList.add('bg-emerald-600/40', 'border-emerald-500', 'text-white');
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+
+                // Points calculation with Streak Bonus
+                const streakMultiplier = Math.min(1 + streak * 0.2, 2.0);
+                const questionScore = Math.round((100 + timeLeft * 10) * streakMultiplier);
+                score += questionScore;
+            } else {
+                playSound('wrong');
+                buttons[selectedIndex].classList.add('bg-rose-600/40', 'border-rose-500', 'text-white');
+                buttons[qData.correct].classList.add('bg-emerald-600/40', 'border-emerald-500', 'text-white');
+                streak = 0;
+            }
+
+            setTimeout(() => {
+                currentQIndex++;
+                loadQuestion();
+            }, 1200);
+        }
+
+        function highlightCorrectAnswer() {
+            const qData = currentQuestions[currentQIndex];
+            const container = document.getElementById('options-container');
+            const buttons = container.querySelectorAll('button');
+            if (buttons[qData.correct]) {
+                buttons[qData.correct].classList.add('bg-emerald-600/40', 'border-emerald-500', 'text-white');
+            }
+        }
+
+        // --- Lifelines ---
+        function useLifeline5050() {
+            if (lifeline5050Used) return;
+            lifeline5050Used = true;
+            playSound('click');
+
+            const btn = document.getElementById('btn-lifeline-5050');
+            btn.disabled = true;
+            btn.classList.add('opacity-40', 'cursor-not-allowed');
+
+            const qData = currentQuestions[currentQIndex];
+            let wrongIndices = [0, 1, 2, 3].filter(i => i !== qData.correct);
+            wrongIndices.sort(() => Math.random() - 0.5);
+
+            // Hide 2 wrong options
+            const container = document.getElementById('options-container');
+            const buttons = container.querySelectorAll('button');
+            buttons[wrongIndices[0]].classList.add('opacity-20', 'pointer-events-none');
+            buttons[wrongIndices[1]].classList.add('opacity-20', 'pointer-events-none');
+        }
+
+        function useLifelineTime() {
+            if (lifelineTimeUsed) return;
+            lifelineTimeUsed = true;
+            playSound('click');
+
+            const btn = document.getElementById('btn-lifeline-time');
+            btn.disabled = true;
+            btn.classList.add('opacity-40', 'cursor-not-allowed');
+
+            timeLeft += 10;
+            document.getElementById('timer-text').innerText = timeLeft;
+        }
+
+        function endGame() {
+            const earnedXP = Math.round(score / 5);
+            userData.totalScore += score;
+            userData.xp += earnedXP;
+
+            // Record History
+            userData.history.unshift({
+                date: new Date().toLocaleDateString('vi-VN'),
+                score: score,
+                category: selectedCategoryKey,
+                maxStreak: maxStreak
+            });
+
+            // Keep top 20 history records
+            if (userData.history.length > 20) userData.history.pop();
+
+            saveUserData();
+
+            // Populate Result UI
+            document.getElementById('result-score').innerText = score.toLocaleString();
+            document.getElementById('result-accuracy').innerText = `${score > 0 ? Math.round(score/150) : 0}/${currentQuestions.length}`;
+            document.getElementById('result-max-streak').innerText = maxStreak;
+            document.getElementById('result-xp').innerText = `+${earnedXP} XP`;
+
+            showScreen('screen-result');
+            triggerConfetti();
+        }
+
+        function restartGame() {
+            selectCategory(selectedCategoryKey);
+        }
+
+        // --- Leaderboard Render ---
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+
+            if (userData.history.length === 0) {
+                list.innerHTML = `<p class="text-center text-slate-400 py-6">Chưa có lịch sử chơi nào. Hãy hoàn thành một ván game ngay!</p>`;
+                return;
+            }
+
+            userData.history.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60";
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs ${idx === 0 ? 'text-amber-400 font-extrabold' : 'text-slate-300'}">
+                            ${idx + 1}
+                        </span>
+                        <div>
+                            <p class="font-bold text-sm text-slate-200">Chủ đề: ${item.category.toUpperCase()}</p>
+                            <p class="text-xs text-slate-400">${item.date} • Streak: ${item.maxStreak}</p>
+                        </div>
+                    </div>
+                    <span class="font-black text-amber-400 text-base">${item.score.toLocaleString()} điểm</span>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function handleAddQuestion(e) {
+            e.preventDefault();
+            const text = document.getElementById('input-q-text').value;
+            const a = document.getElementById('input-q-a').value;
+            const b = document.getElementById('input-q-b').value;
+            const c = document.getElementById('input-q-c').value;
+            const d = document.getElementById('input-q-d').value;
+            const correct = parseInt(document.getElementById('input-q-correct').value);
+
+            const newQ = {
+                q: text,
+                options: [a, b, c, d],
+                correct: correct
+            };
+
+            customQuestions.push(newQ);
+            localStorage.setItem('qq_customQuestions', JSON.stringify(customQuestions));
+
+            // Reset Form
+            document.getElementById('add-question-form').reset();
+            renderCustomQuestionsList();
+            playSound('correct');
+        }
+
+        function deleteCustomQuestion(index) {
+            playSound('click');
+            customQuestions.splice(index, 1);
+            localStorage.setItem('qq_customQuestions', JSON.stringify(customQuestions));
+            renderCustomQuestionsList();
+        }
+
+        function renderCustomQuestionsList() {
+            const list = document.getElementById('custom-questions-list');
+            document.getElementById('custom-count').innerText = customQuestions.length;
+            list.innerHTML = '';
+
+            if (customQuestions.length === 0) {
+                list.innerHTML = `<p class="text-center text-slate-500 py-4 text-sm">Chưa có câu hỏi tự tạo nào.</p>`;
+                return;
+            }
+
+            customQuestions.forEach((q, idx) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 text-sm";
+                item.innerHTML = `
+                    <div class="truncate max-w-[80%]">
+                        <p class="font-bold text-slate-200 truncate">${idx + 1}. ${q.q}</p>
+                        <p class="text-xs text-emerald-400">Đúng: ${q.options[q.correct]}</p>
+                    </div>
+                    <button onclick="deleteCustomQuestion(${idx})" class="text-rose-400 hover:text-rose-300 p-2">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // --- Canvas Confetti Effect ---
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const pieces = [];
+            const numberOfPieces = 100;
+            const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+
+            for (let i = 0; i < numberOfPieces; i++) {
+                pieces.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 5 + 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+
+            let animationFrame;
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pieces.forEach((p) => {
+                    p.y += p.speed;
+                    p.rotation += p.rotationSpeed;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+                });
+
+                if (pieces.some(p => p.y < canvas.height)) {
+                    animationFrame = requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
